@@ -40,6 +40,9 @@ func Normalize(mm *EntityMetaModel) error {
 		if f.GoType == "" {
 			f.GoType = f.Type
 		}
+		if f.GoType == "float" {
+			f.GoType = "float64"
+		}
 		if f.GoType == "" {
 			return fmt.Errorf("no go type %q", f.Name)
 		}

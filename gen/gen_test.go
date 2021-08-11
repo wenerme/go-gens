@@ -8,6 +8,9 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/wenerme/go-gens/gengqls"
+
+	"github.com/Masterminds/sprig"
 	"github.com/wenerme/go-gens/gen"
 	"github.com/wenerme/go-gens/gengo"
 	"github.com/wenerme/go-gens/models/entm"
@@ -24,10 +27,12 @@ func trimTxt(f *gen.File) error {
 
 func TestGen(t *testing.T) {
 	tpl := template.New("test")
+	tpl.Funcs(sprig.TxtFuncMap())
 	template.Must(tpl.Parse(`
 {{define "hello"}}
 hello {{.}} !
 {{end}}
+
 {{define "go"}}
 package gen
 type {{.Name}} struct{
@@ -36,13 +41,22 @@ type {{.Name}} struct{
 {{end}}
 }
 {{end}}
+
+{{define "gqls"}}
+type {{.Name}} {
+  {{- range $k, $v := .Fields}}
+  """{{$v.NameZh}}"""
+  {{$v.Name}}: {{$v.Type | title}}
+  {{- end}}
+}
+{{end}}
 `))
 
 	load := false
 	g := &gen.Generator{
 		Debug:     true,
 		Template:  tpl,
-		Formatter: gen.Formatters(trimTxt, gengo.Format),
+		Formatter: gen.Formatters(trimTxt, gengo.Format, gengqls.Format),
 		Templates: []gen.IsTemplate{
 			gen.Template{
 				Name: "hello",
@@ -63,6 +77,13 @@ type {{.Name}} struct{
 			entm.MetaModelTemplate{
 				Filename: "model.go",
 				Name:     "go",
+				Skip: func(ctx context.Context, mm *entm.EntityMetaModel) bool {
+					return false
+				},
+			},
+			entm.MetaModelTemplate{
+				Filename: "model.graphqls",
+				Name:     "gqls",
 				Skip: func(ctx context.Context, mm *entm.EntityMetaModel) bool {
 					return false
 				},
